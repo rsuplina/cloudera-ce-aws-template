@@ -14,8 +14,6 @@
 # limitations under the License.
 
 # Base Cluster with all services
-#
-# https://docs.cloudera.com/cdp-private-cloud-data-services/1.5.4/installation-ecs/topics/cdppvc-installation-base-software-requirements.html
 
 
 - name: Base cluster version variables
@@ -382,7 +380,6 @@
           dfs_encrypt_data_transfer_algorithm: AES/CTR/NoPadding
           hadoop_secure_web_ui: true
           core_connector: "{{ __cluster.cloudera_manager.tags['_cldr_cluster.core_settings.service_name'] }}"
-          # zookeeper_service: "{{ __zookeeper.service.name }}"
         role_config_groups:
           - type: DATANODE
             config:
@@ -657,7 +654,6 @@
       vars:
         knox_db_enabled: "{{ cloudera_runtime_version is version('7.3.1', 'ge', version_type='loose') }}"
       register: __knox
-      # notify: Services updated # Always returns TRUE until we have the suppress_redacted flag enabled
 
     - name: Establish Flink service
       tags:
@@ -1183,10 +1179,6 @@
         name: "{{ inventory_hostname }}" # str
         cluster: full-base-cluster
         host_template: "{{ host_template | default(omit) }}"
-        # roles: # See role overrides note above in the cluster set up
-        #   - service: # str
-        #     type: # str
-        #     config: # dict
 
 - name: Configure Hue WebHDFS with NAMENODE role reference
   hosts: localhost
