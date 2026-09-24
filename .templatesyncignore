@@ -32,6 +32,7 @@
 :!playbooks/nifi-cluster.yml
 :!playbooks/nifi2.0-cluster.yml
 :!playbooks/csa-cluster.yml
+:!playbooks/full-cluster.yml
 
 # Playbooks (ECS)
 :!playbooks/ecs-cluster.yml
