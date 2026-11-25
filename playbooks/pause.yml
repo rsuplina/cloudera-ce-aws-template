@@ -28,7 +28,17 @@
   tasks:
     - name: Query the clusters
       cloudera.cluster.cluster_info:
+        type: any
       register: __clusters
+     
+    - name: Ensure the ECS clusters are stopped
+      cloudera.cluster.cluster:
+        name: "{{ __cluster.name }}"
+        state: stopped
+      loop: "{{ __clusters.clusters | selectattr('cluster_type', 'eq', 'EXPERIENCE_CLUSTER') | list }}"
+      loop_control:
+        loop_var: __cluster
+        label: "{{ __cluster.name }}"
 
     - name: Ensure the base clusters are stopped
       cloudera.cluster.cluster:

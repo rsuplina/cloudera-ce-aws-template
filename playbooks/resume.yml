@@ -58,6 +58,7 @@
 
     - name: Query the clusters
       cloudera.cluster.cluster_info:
+        type: any
       register: __clusters
 
     - name: Ensure the base clusters are started
@@ -87,3 +88,39 @@
       until: __health.clusters | map(attribute='entity_status') | first == 'GOOD_HEALTH'
       retries: 20
       delay: 30
+
+    - name: Ensure the ECS clusters are started
+      cloudera.cluster.cluster:
+        name: "{{ __cluster.name }}"
+        state: started
+      loop: "{{ __clusters.clusters | selectattr('cluster_type', 'eq', 'EXPERIENCE_CLUSTER') | list }}"
+      loop_control:
+        loop_var: __cluster
+        label: "{{ __cluster.name }}"
+
+    - name: Wait for each ECS service to be started
+      cloudera.cluster.service_info:
+        cluster: "{{ __cluster.name }}"
+      loop: "{{ __clusters.clusters | selectattr('cluster_type', 'eq', 'EXPERIENCE_CLUSTER') | list }}"
+      loop_control:
+        loop_var: __cluster
+        label: "{{ __cluster.name }}"
+      register: __ecs_services
+      vars:
+        ecs_services: "{{ __ecs_services.services | default([]) | selectattr('type', 'eq', 'ECS') | list }}"
+      until: __ecs_services is succeeded and ecs_services | length == 1 and ecs_services[0].service_state == 'STARTED'
+      retries: 40
+      delay: 15
+
+    - name: Unseal Vault on each ECS cluster
+      cloudera.cluster.cm_resource:
+        path: "/clusters/{{ __ecs_service.__cluster.name | urlencode }}/services/{{ ecs_service_name | urlencode }}/commands/VaultUnseal"
+        method: POST
+      loop: "{{ __ecs_services.results }}"
+      loop_control:
+        loop_var: __ecs_service
+        label: "{{ __ecs_service.__cluster.name }}"
+      vars:
+        ecs_service_name: "{{ __ecs_service.services | selectattr('type', 'eq', 'ECS') | map(attribute='name') | first }}"
+      register: __unseal
+
